@@ -1,0 +1,46 @@
+### Download SJPM sp. from GBIF
+
+library(dismo)
+library(rgdal)
+
+##
+##aoi <- readOGR(dsn="./Shapefiles/Admin", layer="ca_AOI2")
+##
+
+##Read in species occurrence from gbif of all perognathus
+
+sp.occur <- gbif(genus='Perognathus', species='', geo=TRUE)
+
+##write as a csv so don't have to again
+
+write.csv(sp.occur, "C:\\Users\\nba52\\Desktop\\gbif-all-22jul2016.csv", row.names=FALSE)
+
+
+###read in sp occurrence datasheet
+
+sp.occur <- read.csv(chooose.files())
+
+##omit ones without latitude
+sp.occur <- subset(sp.occur, !is.na(sp.occur$lat))
+
+##converti to spatial data frame
+sp.occur.spdf <- SpatialPointsDataFrame(data.frame(sp.occur$lon, sp.occur$lat), 
+                                        data=sp.occur)
+
+
+##Subset to locations only in California
+
+cal.occur <- subset(sp.occur.spdf, sp.occur.spdf$adm1=="California")
+plot(cal.occur)
+
+##subset into inornatus species
+inornatus<-subset(cal.occur[which(cal.occur$species=="Perognathus inornatus"),])
+plot(inornatus)
+
+##convert to dataframe
+inornatus_df<-data.frame(inornatus)
+cal.occur_df<-data.frame(cal.occur)
+
+##omit undefined species occurrences
+
+cal.occur_df1<-cal.occur_df[!is.na(cal.occur_df$species),]
