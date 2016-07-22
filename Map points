@@ -1,0 +1,34 @@
+##plot points on a googlemap
+
+library(ggmap)
+
+##set up the imagery data
+
+mapImageData <- get_map(location = c(lon = mean(inornatus$lon),
+  lat = mean(inornatus$lat)),
+  color = "color", # or bw
+  source = "google",
+  maptype = "satellite",
+  # api_key = "your_api_key", # only needed for source = "cloudmade"
+  zoom = 6)
+
+
+##plot with the points
+
+ggmap(mapImageData,
+  extent = "device", # "panel" keeps in axes, etc.
+  ylab = "Latitude",
+  xlab = "Longitude",
+  legend = "right") +
+
+  geom_point(aes(x = lon, # path outline
+  y = lat),
+  data = cal.occur_df1,
+  colour = "black",
+  size = 2) +
+
+  geom_point(aes(x = lon, # path outline
+  y = lat),
+  data = inornatus_df,
+  colour = "red",
+  size = 2) 
