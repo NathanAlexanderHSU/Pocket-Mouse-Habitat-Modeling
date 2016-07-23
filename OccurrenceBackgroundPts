@@ -1,0 +1,23 @@
+colnames(inornatus_df) 
+inort.xy<-cbind(inornatus_df$lon,inornatus_df$lat)
+colnames(inort.xy)<-c("X","Y")
+
+colnames(nba_df)
+nba.xy<-cbind(nba_df$coords.x1,nba_df$coords.x2)
+colnames(nba.xy)<-c("X","Y")
+
+all.inort<-rbind(inort.xy,nba.xy)
+plot(all.inort)
+
+colnames(pema.occur_df)
+pema.xy<-cbind(pema.occur_df$decimallongitude,pema.occur_df$decimallatitude)
+colnames(pema.xy)<-c("X","Y")
+
+colnames(cal.occur_df1)
+pero.xy<-cbind(cal.occur_df1$lon,cal.occur_df1$lat)
+colnames(pero.xy)<-c("X","Y")
+
+all.pts<-rbind(inort.xy,nba.xy,pema.xy,pero.xy)
+
+plot(all.pts)
+points(all.inort, col="blue")
