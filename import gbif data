@@ -3,43 +3,90 @@
 library(dismo)
 library(rgdal)
 
-##
-##aoi <- readOGR(dsn="./Shapefiles/Admin", layer="ca_AOI2")
+
+
+##CA shapefile from Cara-projected to WGS84 in ArcMap
+
+setwd(choose.dir())
+cal<-readOGR(dsn=".",layer="ca_wgs84")
+plot(cal)
 ##
 
 ##Read in species occurrence from gbif of all perognathus
 
-sp.occur <- gbif(genus='Perognathus', species='', geo=TRUE)
+sp.occur <- gbif(genus='Perognathus', species='', geo=TRUE,removeZeros=TRUE)
+memory.limit
 
+##download pema occurrences manually due to size.
+
+pema.occur<-read.csv(choose.files(),header=T)
+pema.occur<-pe
+head(pema.occur)
 ##write as a csv so don't have to again
 
 write.csv(sp.occur, "C:\\Users\\nba52\\Desktop\\gbif-all-22jul2016.csv", row.names=FALSE)
-
+write.csv(pema.occur, "C:\\Users\\nba52\\Desktop\\gbif-pema-22jul2016.csv", row.names=FALSE)
 
 ###read in sp occurrence datasheet
 
-sp.occur <- read.csv(chooose.files())
+sp.occur <- read.csv(choose.files(),header=T)
+pema.occur<-read.csv(choose.files(),header=T)
 
 ##omit ones without latitude
 sp.occur <- subset(sp.occur, !is.na(sp.occur$lat))
+colnames(pema.occur)
 
-##converti to spatial data frame
+pe.occur<-subset(pema.occur,!is.na(pema.occur$decimallatitude))
+
+names(pe.occur)
+##convert to spatial data frame
+
 sp.occur.spdf <- SpatialPointsDataFrame(data.frame(sp.occur$lon, sp.occur$lat), 
                                         data=sp.occur)
 
 
-##Subset to locations only in California
+pe.occur.spdf <- SpatialPointsDataFrame(data.frame(pe.occur$decimallongitude, pe.occur$decimallatitude), 
+                                        data=pe.occur)
 
-cal.occur <- subset(sp.occur.spdf, sp.occur.spdf$adm1=="California")
-plot(cal.occur)
+##Define projection
+
+sp.occur.spdf@proj4string <- cal@proj4string
+
+sp.occur.spdf$name <- over(sp.occur.spdf, cal)$NAME
+
+pe.occur.spdf@proj4string <- cal@proj4string
+
+pe.occur.spdf$name <- over(pe.occur.spdf, cal)$NAME
+
+##plot points
+plot(cal)
+points(pe.occur.spdf)
+points(sp.occur.spdf,pch=17,col="red")
+points(inornatus,pch=10,col="yellow")
+
+###Crop points
+
+re.sp.occur.spdf <- sp.occur.spdf[cal,]
+re.pe.occur.spdf<-pe.occur.spdf[cal,]
+
 
 ##subset into inornatus species
-inornatus<-subset(cal.occur[which(cal.occur$species=="Perognathus inornatus"),])
-plot(inornatus)
+
+inornatus<-subset(re.sp.occur.spdf[which(re.sp.occur.spdf$species=="Perognathus inornatus"),])
+
+
+##plot points
+
+plot(cal)
+points(re.sp.occur.spdf,col="red")
+points(re.pe.occur.spdf, col="black")
+points(inornatus,col="blue")
+
 
 ##convert to dataframe
 inornatus_df<-data.frame(inornatus)
-cal.occur_df<-data.frame(cal.occur)
+cal.occur_df<-data.frame(re.sp.occur.spdf)
+pema.occur_df<-data.frame(re.pe.occur.spdf)
 
 ##omit undefined species occurrences
 
