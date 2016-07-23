@@ -10,7 +10,12 @@ library(rgdal)
 setwd(choose.dir())
 cal<-readOGR(dsn=".",layer="ca_wgs84")
 plot(cal)
-##
+
+##Read in GKR SJPM data
+
+setwd(choose.dir())
+nba<-readOGR(dsn=".",layer="NBA")
+
 
 ##Read in species occurrence from gbif of all perognathus
 
@@ -58,11 +63,15 @@ pe.occur.spdf@proj4string <- cal@proj4string
 
 pe.occur.spdf$name <- over(pe.occur.spdf, cal)$NAME
 
+nba@proj4string <- cal@proj4string
+
+nba$name <- over(nba, cal)$NAME
 ##plot points
 plot(cal)
 points(pe.occur.spdf)
 points(sp.occur.spdf,pch=17,col="red")
 points(inornatus,pch=10,col="yellow")
+points(nba,pch=14,col="blue")
 
 ###Crop points
 
@@ -81,12 +90,14 @@ plot(cal)
 points(re.sp.occur.spdf,col="red")
 points(re.pe.occur.spdf, col="black")
 points(inornatus,col="blue")
+points(nba,col="yellow")
 
 
 ##convert to dataframe
 inornatus_df<-data.frame(inornatus)
 cal.occur_df<-data.frame(re.sp.occur.spdf)
 pema.occur_df<-data.frame(re.pe.occur.spdf)
+nba_df<-data.frame(nba)
 
 ##omit undefined species occurrences
 
