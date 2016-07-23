@@ -1,0 +1,189 @@
+install.packages("spatstat")
+install.packages("rgdal")
+install.packages("raster")
+install.packages("maptools")
+install.packages("rgeos")
+install.packages("rJava")
+install.packages("sp")
+install.packages("PresenceAbsence")
+require(spatstat)
+require(rgdal)
+require(raster)
+require(maptools)
+require(rgeos)
+require(dismo)
+require(rJava)
+require(sp)
+require(PresenceAbsence)
+library(dismo)
+
+library(tiff)
+
+
+
+setwd("F:\\SJPM\\Allpts")
+
+range<-readOGR(dsn=".",layer="Neglectus_Buff10km")
+neg<- readOGR(dsn=".",layer="Vertnet")
+NBAneg<-readOGR(dsn=".",layer="Alexander")
+
+summary(NBAneg)
+
+Neglectus<-merge(NBAneg,neg)
+summary(Neglectus)
+
+prismcv<-raster("F:\\SJPM\\R input\\PRISM-Precip-1950-2000\\prism-cv.asc")
+
+
+elev <- getData('alt', country='USA', mask=FALSE)
+elev.48 <- elev[[1]]
+
+climate <- getData('worldclim', var='bio', res=.5)
+climate.48 <- crop(climate, elev.48)
+climate <- getData('worldclim', var='bio', res=0.5, lon=-125, lat=36)
+climate1 <- getData('worldclim', var='bio', res=0.5, lon=-120, lat=36)
+climate2 <- getData('worldclim', var='bio', res=0.5, lon=-115, lat=36)
+clim<-merge(climate,climate1,climate2)
+clim.48<-crop(clim,elev.48)
+plot(clim)
+
+CVcrop<-crop(prismcv,elev.48)
+cv.resample<-resample(CVcrop,clim)
+plot(CVcrop)
+elev.48.resample <- resample(elev.48, clim)
+
+slope.48<-terrain(elev.48.resample,opt='slope',unit='radians',neighbors=8) 
+
+
+
+SJPMproj<-"+proj=aea +lat_1=60 +lat_2=60 +lat_0=37 +lon_0=-115 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs
++ellps=WGS84 +towgs84=0,0,0"
+Elevproj<-projectRaster(elev.48.resample,crs=SJPMproj)
+climproj<-projectRaster(climate.48,crs=SJPMproj)
+
+
+
+
+
+
+predictors <- stack(clim,slope.48,cv.resample)
+head(predictors)
+reduced.preds <- stack(c(predictors[[1]], predictors[[4]], 
+                         predictors[[12]], predictors[[16]],
+                         predictors[[17]],predictors[[20]],predictors[[21]]))
+head(reduced.preds)
+bioclim_cropped <- na.omit(crop(reduced.preds, c(-123, -115, 34, 38.5)))
+plot(range,add=TRUE)
+plot(bioclim_cropped)
+occ.pts <- as.data.frame(neg)
+occ.pts1<-as.data.frame(NBAneg)
+head(occ.pts)
+nba.pts<-data.frame(occ.pts1$Longitude, occ.pts1$Latitude)
+nba.pts<-(nba.pts[c(1:10,19:35),])
+nba.pts
+names(nba.pts)<-c("Longitude","Latitude")
+head(nba.pts)
+neg.pts<-data.frame(occ.pts$Field30, occ.pts$Field29)
+names(neg.pts)<-c("Longitude","Latitude")
+head(neg.pts)
+combined<-rbind(nba.pts[,1:2],neg.pts[,1:2])
+combined.pts<-as.data.frame(combined[,1:2])
+head(combined.pts)
+dim(combined)
+summary(combined)
+row_sub = apply(combined, 1, function(row) all(row !=0 ))
+row_sub
+combined<-combined[row_sub,]
+combined
+colnames(combined)<-c("Longitude","Latitude")
+combined.pts<-data.frame(combined$Longitude,combined$Latitude)
+
+plot(bioclim_cropped[[1]])
+plot(bioclim_cropped[[2]],add=TRUE)
+plot(bioclim_cropped[[3]],add=TRUE)
+plot(bioclim_cropped[[7]],add=TRUE)
+plot(combined,add=TRUE)
+plot(neg)
+
+
+neg.maxent <- maxent(reduced.preds, combined.pts, args=c("betamultiplier=2", "-J", "-P"),
+				path="F:\\SJPM\\Clipped points\\Maxent_ALL")
+
+predictors<-bioclim_cropped
+occ.pts<-combined.pts
+
+beta.parameters <- c(1,2,3,4)
+beta.parameters<-1 # Create a vector of all the beta paremeters
+
+for(i in beta.parameters){
+  print(paste("Run Maxent with", i, "as the beta parameter"))
+}
+
+all.combos <- list()
+pred.num <- nlayers(predictors)
+for(i in 2:pred.num){
+  all.combos <- c(all.combos, combn(1:pred.num, i, simplify=FALSE))
+}
+
+all.combos
+class(all.combos)
+all.combos[[4]]
+for(i in beta.parameters){ # Create a loop for each beta parameter
+  for(j in 1:length(all.combos)){
+output.dir <- paste("F:\\SJPM\\Clipped points\\models\\b", i, ".", 
+                        paste(all.combos[[j]], collapse=''), sep="")   
+print(output.dir)
+model <- maxent(predictors[[all.combos[[j]]]], occ.pts[,1:2],
+                    args=c(paste("betamultiplier=", i, sep=""), "outputformat=raw"),
+                           path=output.dir)
+    max.results <- predict(model, predictors[[all.combos[[j]]]])
+    writeRaster(max.results, paste(output.dir, "/maxent.asc", sep=""),
+                format="ascii")
+    print(paste(j, " of ", length(all.combos), ": ", Sys.time(), sep=""))
+  }
+  
+}
+
+ occ.pts<-data.frame(occ.pts)
+head(occ.pts)
+name <- rep("neglectus",nrow(occ.pts))
+enmtools.occpts <- data.frame(name, occ.pts[,1], occ.pts[,2])
+colnames(enmtools.occpts) <- c("Species", "X", "Y")
+write.csv(enmtools.occpts, "F:\\SJPM\\Clipped points\\models\\AllNeg5B.csv", row.names=FALSE)
+
+
+head(enmtools.occpts)
+
+setwd("F:\\SJPM\\Clipped points\\models")
+
+
+getwd()
+dirs <- list.files()
+dirs
+
+models <- NULL
+for(i in 1:length(dirs)){
+  models[i] <- paste("F:\\SJPM\\Clipped points\\models\\AllNeg5B.csv,","F:\\SJPM\\Clipped points\\models\\",dirs[i], 
+			"\\maxent.asc,F:\\SJPM\\Clipped points\\models\\", dirs[i],
+                    "/species.lambdas", sep="")
+}
+
+write.csv(models, "maxent_models.csv", row.names=FALSE, quote=FALSE, col.names=FALSE)
+
+plot(range,add=TRUE)
+predictors1<-stack(predictors[[1:3]],predictors[[5:6]])
+plot(predictors1)
+
+sjpmmodel <- maxent(predictors, occ.pts[,1:2],
+                    args=c("betamultiplier=1", "outputformat=raw"),
+                           path=output.dir)
+NegPred<-predict(sjpmmodel,predictors)
+writeRaster(NegPred,"F:\\SJPM\\Clipped points\\selectedmodel.asc",format="ascii",overwrite=TRUE)
+
+neg.maxent <- maxent(predictors, occ.pts[,1:2], args=c("betamultiplier=1", "-J", "-P"),
+				path="F:\\SJPM\\Clipped points\\M1")
+plot(NegPred,add=TRUE)
+plot(combined.pts[,1:2],add=TRUE)
+
+
+
