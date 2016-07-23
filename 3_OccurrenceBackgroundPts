@@ -21,3 +21,6 @@ all.pts<-rbind(inort.xy,nba.xy,pema.xy,pero.xy)
 
 plot(all.pts)
 points(all.inort, col="blue")
+
+write.csv(inort.xy,"H:\\SJPM_July2016\\occurrences.csv")
+write.csv(all.pts,"H:\\SJPM_July2016\\backgroundpts.csv")
