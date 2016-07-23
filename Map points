@@ -1,3 +1,4 @@
+############################################################
 ##plot points on a googlemap
 
 library(ggmap)
@@ -21,10 +22,16 @@ ggmap(mapImageData,
   xlab = "Longitude",
   legend = "right") +
 
+  geom_point(aes(x = decimallongitude, # path outline
+  y = decimallatitude),
+  data = pema.occur_df,
+  colour = "black",
+  size = 2) +
+
   geom_point(aes(x = lon, # path outline
   y = lat),
   data = cal.occur_df1,
-  colour = "black",
+  colour = "blue",
   size = 2) +
 
   geom_point(aes(x = lon, # path outline
@@ -32,3 +39,5 @@ ggmap(mapImageData,
   data = inornatus_df,
   colour = "red",
   size = 2) 
+unique(pema.occur_df$year)
+###########################################################
