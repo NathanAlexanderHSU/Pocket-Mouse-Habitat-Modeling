@@ -38,6 +38,12 @@ ggmap(mapImageData,
   y = lat),
   data = inornatus_df,
   colour = "red",
+  size = 2) +
+
+  geom_point(aes(x = coords.x1, # path outline
+  y = coords.x2),
+  data = nba_df,
+  colour = "yellow",
   size = 2) 
-unique(pema.occur_df$year)
+
 ###########################################################
