@@ -1,0 +1,48 @@
+#################
+##Trial maxent###
+#################
+
+##move maxent.jar file here: C:/Program Files/R/R-3.3.1/library/dismo/java/maxent.jar.
+plot(reduced.preds)
+###not enough background samples for random points... 
+
+neg.maxent <- maxent(ex.pred, occ.pts[,2:3], removeDuplicates=TRUE, args=c("betamultiplier=2", "-J", "-P"),
+				path="H:\\SJPM_July2016\\Maxent_trial\\Max_T1")
+
+#######################################
+###MaxEnt for different combinations###
+#######################################
+
+predictors<-ex.pred
+occ.pts<-occ.pts[,2:3]
+beta.parameters <- c(1,2,3,4)
+#beta.parameters<-1 # Create a vector of all the beta paremeters
+
+for(i in beta.parameters){
+  print(paste("Run Maxent with", i, "as the beta parameter"))
+}
+
+all.combos <- list()
+pred.num <- nlayers(predictors)
+for(i in 2:pred.num){
+  all.combos <- c(all.combos, combn(1:pred.num, i, simplify=FALSE))
+}
+
+all.combos
+class(all.combos)
+
+for(i in beta.parameters){ # Create a loop for each beta parameter
+  for(j in 1:length(all.combos)){
+output.dir <- paste("H:\\SJPM_July2016\\MaxEnt_FULL\\b", i, ".", 
+                        paste(all.combos[[j]], collapse=''), sep="")   
+print(output.dir)
+model <- maxent(predictors[[all.combos[[j]]]], occ.pts[,1:2],
+                    args=c(paste("betamultiplier=", i, sep=""), "outputformat=raw"),
+                           path=output.dir)
+    max.results <- predict(model, predictors[[all.combos[[j]]]])
+    writeRaster(max.results, paste(output.dir, "/maxent.asc", sep=""),
+                format="ascii")
+    print(paste(j, " of ", length(all.combos), ": ", Sys.time(), sep=""))
+  }
+  
+}
