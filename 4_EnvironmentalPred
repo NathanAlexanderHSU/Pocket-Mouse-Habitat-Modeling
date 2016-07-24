@@ -1,0 +1,56 @@
+setwd(choose.dir()) 
+
+##elevation
+
+elev <- getData('alt', downoad=TRUE, country='USA', mask=FALSE)
+elev.48 <- elev[[1]]
+
+##Bioclim
+
+clim.W<-getData('worldclim',var='bio',res=0.5,lon=-121,lat=32)
+clim.E<-getData('worldclim',var='bio',res=0.5,lon=-120,lat=32)
+clim<-merge(clim.W,clim.E)
+plot(cal.shp,add=TRUE)
+plot(clim[[1]])
+
+##crop data to california
+##Crop function created data in Nevada, too, so use mask
+
+cr.clim<-mask(clim,cal.shp)
+cr.elev<-mask(elev.48,cal.shp)
+cr.precip.cv<-mask(prismcv,cal.shp)
+
+##check to make sure it works
+#plot(prismcv)
+#plot(cal.shp,add=TRUE)
+#plot(cr.precip.cv)
+
+##resample PRISM Coefficient of variance parameter and elevation parameter to
+##bioclim scale
+cr.re.pcv<-resample(cr.precip.cv,cr.clim)
+cr.re.elev <- resample(cr.elev, cr.clim)
+
+##convert elevation to slope
+slope<-terrain(cr.re.elev,opt='slope',unit='degrees',neighbors=8)
+
+##select predictors
+predictors <- stack(cr.clim,slope,cr.re.pcv)
+head(predictors)
+reduced.preds <- stack(c(predictors[[1]], predictors[[4]], 
+                         predictors[[12]], predictors[[16]],
+                         predictors[[17]],predictors[[20]],predictors[[21]]))
+
+##Create Rasters with only background points
+
+set up an empty raster
+cr.pred<-crop(reduced.preds,cal.shp)
+
+e<-extent(cr.pred[[1]])
+r<-raster(e,ncol=1233,nrow=1137)
+rast.back<-rasterize(back.pts[,2:3],r,back.pts[,1])
+rast.back
+
+
+ex.pred<-mask(cr.pred,rast.back)
+ex.pred
+points(back.pts[2:3],add=TRUE)
