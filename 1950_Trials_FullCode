@@ -1,0 +1,337 @@
+### Download SJPM sp. from GBIF
+install.packages("dismo")
+library(dismo)
+install.packages("rgdal")
+library(rgdal)
+
+
+
+##CA shapefile from Cara-projected to WGS84 in ArcMap
+
+setwd(choose.dir())
+cal<-readOGR(dsn=".",layer="ca_wgs84")
+plot(cal)
+
+##Read in GKR SJPM data
+
+setwd(choose.dir())
+nba<-readOGR(dsn=".",layer="NBA")
+
+###read in sp occurrence datasheet
+
+sp.occur <- read.csv(choose.files(),header=T)
+pema.occur<-read.csv(choose.files(),header=T)
+
+##omit ones without latitude
+sp.occur <- subset(sp.occur, !is.na(sp.occur$lat))
+colnames(pema.occur)
+
+pe.occur<-subset(pema.occur,!is.na(pema.occur$decimallatitude))
+
+names(pe.occur)
+##convert to spatial data frame
+
+sp.occur.spdf <- SpatialPointsDataFrame(data.frame(sp.occur$lon, sp.occur$lat), 
+                                        data=sp.occur)
+
+
+pe.occur.spdf <- SpatialPointsDataFrame(data.frame(pe.occur$decimallongitude, pe.occur$decimallatitude), 
+                                        data=pe.occur)
+
+##Define projection
+
+sp.occur.spdf@proj4string <- cal@proj4string
+
+sp.occur.spdf$name <- over(sp.occur.spdf, cal)$NAME
+
+pe.occur.spdf@proj4string <- cal@proj4string
+
+pe.occur.spdf$name <- over(pe.occur.spdf, cal)$NAME
+
+nba@proj4string <- cal@proj4string
+
+nba$name <- over(nba, cal)$NAME
+
+##plot points
+plot(cal)
+
+points(pe.occur.spdf)
+points(sp.occur.spdf,pch=17,col="red")
+points(inornatus,pch=10,col="yellow")
+points(nba,pch=14,col="blue")
+
+###Crop points
+
+re.sp.occur.spdf <- sp.occur.spdf[cal,]
+re.pe.occur.spdf<-pe.occur.spdf[cal,]
+re.nba<-nba[cal,]
+
+
+##subset into inornatus species
+
+inornatus<-subset(re.sp.occur.spdf[which(re.sp.occur.spdf$species=="Perognathus inornatus"),])
+
+##subset into post 1950
+head(inornatus)
+inornatus<-inornatus[which(re.sp.occur.spdf$species=="Perognathus inornatus"),])
+
+in.50<-inornatus[which(inornatus$year>=1950),]
+
+pema.50<-re.pe.occur.spdf[which(re.pe.occur.spdf$year>=1950),]
+
+pero.50<-re.sp.occur.spdf[which(re.sp.occur.spdf$year>=1950),]
+
+##plot points
+
+plot(cal)
+points(in.50,col="red")
+points(pema.50, col="black")
+points(pero.50,col="blue")
+points(nba,col="yellow")
+
+
+##convert to dataframe
+inornatus_df<-data.frame(in.50)
+cal.occur_df<-data.frame(pero.50)
+pema.occur_df<-data.frame(pema.50)
+nba_df<-data.frame(re.nba)
+
+##omit undefined species occurrences
+
+cal.occur_df1<-cal.occur_df[!is.na(cal.occur_df$species),]
+
+
+############################################################
+##plot points on a googlemap
+install.packages("ggmap")
+library(ggmap)
+
+##set up the imagery data
+
+mapImageData <- get_map(location = c(lon = mean(inornatus$lon),
+  lat = mean(inornatus$lat)),
+  color = "color", # or bw
+  source = "google",
+  maptype = "satellite",
+  # api_key = "your_api_key", # only needed for source = "cloudmade"
+  zoom = 6)
+
+
+##plot with the points
+
+ggmap(mapImageData,
+  extent = "device", # "panel" keeps in axes, etc.
+  ylab = "Latitude",
+  xlab = "Longitude",
+  legend = "right") +
+
+  geom_point(aes(x = decimallongitude, # path outline
+  y = decimallatitude),
+  data = pema.occur_df,
+  colour = "black",
+  size = 2) +
+
+  geom_point(aes(x = lon, # path outline
+  y = lat),
+  data = cal.occur_df1,
+  colour = "blue",
+  size = 2) +
+
+  geom_point(aes(x = lon, # path outline
+  y = lat),
+  data = inornatus_df,
+  colour = "red",
+  size = 2) +
+
+  geom_point(aes(x = coords.x1, # path outline
+  y = coords.x2),
+  data = nba_df,
+  colour = "yellow",
+  size = 2) 
+
+###########################################################
+write all the shapefiles
+setwd(choose.dir())
+writeOGR(pero.50, dsn = '.', layer = 'Perognathus_1950', driver = 'ESRI Shapefile')
+writeOGR(pema.50, dsn = '.', layer = 'Peromyscus_1950', driver = 'ESRI Shapefile')
+writeOGR(in.50, dsn = '.', layer = 'inornatus_1950', driver = 'ESRI Shapefile')
+writeOGR(re.nba, dsn = '.', layer = 'inornatus_nba', driver = 'ESRI Shapefile')
+
+
+###########################################################
+colnames(inornatus_df) 
+inort.xy<-cbind(inornatus_df$lon,inornatus_df$lat)
+colnames(inort.xy)<-c("X","Y")
+
+colnames(nba_df)
+nba.xy<-cbind(nba_df$coords.x1,nba_df$coords.x2)
+colnames(nba.xy)<-c("X","Y")
+
+all.inort<-rbind(inort.xy,nba.xy)
+plot(all.inort)
+
+colnames(pema.occur_df)
+pema.xy<-cbind(pema.occur_df$decimallongitude,pema.occur_df$decimallatitude)
+colnames(pema.xy)<-c("X","Y")
+
+colnames(cal.occur_df1)
+pero.xy<-cbind(cal.occur_df1$lon,cal.occur_df1$lat)
+colnames(pero.xy)<-c("X","Y")
+
+all.pts<-rbind(inort.xy,nba.xy,pema.xy,pero.xy)
+
+plot(all.pts)
+points(all.inort, col="blue")
+
+write.csv(inort.xy,"H:\\SJPM_July2016\\occurrences1950.csv")
+write.csv(all.pts,"H:\\SJPM_July2016\\backgroundpts1950.csv")
+
+##########################################################
+###############MAXENT MODEL START#########################
+##########################################################
+
+install.packages("spatstat")
+install.packages("rgdal")
+install.packages("raster")
+install.packages("maptools")
+install.packages("rgeos")
+install.packages("rJava")
+install.packages("sp")
+install.packages("PresenceAbsence")
+require(spatstat)
+require(rgdal)
+require(raster)
+require(maptools)
+require(rgeos)
+require(dismo)
+require(rJava)
+require(sp)
+require(PresenceAbsence)
+library(dismo)
+
+
+##load points
+##########################
+##READ IN 1950 CSV files##
+##########################
+
+occ.pts<-read.csv(choose.files())
+back.pts<-read.csv(choose.files())
+
+##load cal shape file
+
+setwd(choose.dir())
+cal.shp<-readOGR(dsn=".",layer="ca_wgs84")
+##Predictor variables
+
+##precip coefficient of variance
+prismcv<-raster("F:\\SJPM\\R input\\PRISM-Precip-1950-2000\\prism-cv.asc")
+
+
+##For downloading data, need to set directory to where it can be saved
+setwd(choose.dir()) 
+
+##elevation
+
+elev <- getData('alt', downoad=TRUE, country='USA', mask=FALSE)
+elev.48 <- elev[[1]]
+
+##Bioclim
+
+clim.W<-getData('worldclim',var='bio',res=0.5,lon=-121,lat=32)
+clim.E<-getData('worldclim',var='bio',res=0.5,lon=-120,lat=32)
+clim<-merge(clim.W,clim.E)
+plot(cal.shp,add=TRUE)
+plot(clim[[1]])
+
+##crop data to california
+##Crop function created data in Nevada, too, so use mask
+
+cr.clim<-mask(clim,cal.shp)
+cr.elev<-mask(elev.48,cal.shp)
+cr.precip.cv<-mask(prismcv,cal.shp)
+
+##check to make sure it works
+#plot(prismcv)
+#plot(cal.shp,add=TRUE)
+#plot(cr.precip.cv)
+
+##resample PRISM Coefficient of variance parameter and elevation parameter to
+##bioclim scale
+cr.re.pcv<-resample(cr.precip.cv,cr.clim)
+cr.re.elev <- resample(cr.elev, cr.clim)
+
+##convert elevation to slope
+slope<-terrain(cr.re.elev,opt='slope',unit='degrees',neighbors=8)
+
+##select predictors
+predictors <- stack(cr.clim,slope,cr.re.pcv)
+head(predictors)
+reduced.preds <- stack(c(predictors[[1]], predictors[[4]], 
+                         predictors[[12]], predictors[[16]],
+                         predictors[[17]],predictors[[20]],predictors[[21]]))
+
+##Create Rasters with only background points
+
+set up an empty raster
+cr.pred<-crop(reduced.preds,cal.shp)
+
+e<-extent(cr.pred[[1]])
+r<-raster(e,ncol=1233,nrow=1137)
+rast.back<-rasterize(back.pts[,2:3],r,back.pts[,1])
+rast.back
+
+
+ex.pred<-mask(cr.pred,rast.back)
+plot(ex.pred[[1]])
+points(back.pts[2:3],add=TRUE)
+
+
+plot(cr.pred)
+
+
+##Trial maxent
+##move maxent.jar file here: C:/Program Files/R/R-3.3.1/library/dismo/java/maxent.jar.
+plot(reduced.preds)
+###not enough background samples for random points... 
+
+neg.maxent <- maxent(ex.pred, occ.pts[,2:3], removeDuplicates=TRUE, args=c("betamultiplier=2", "-J", "-P"),
+				path="H:\\SJPM_July2016\\Maxent_trial\\1950_T1")
+
+#######################################
+###MaxEnt for different combinations###
+#######################################
+
+predictors<-ex.pred
+occ.pts<-occ.pts[,2:3]
+beta.parameters <- c(1,2,3,4)
+#beta.parameters<-1 # Create a vector of all the beta paremeters
+
+for(i in beta.parameters){
+  print(paste("Run Maxent with", i, "as the beta parameter"))
+}
+
+all.combos <- list()
+pred.num <- nlayers(predictors)
+for(i in 2:pred.num){
+  all.combos <- c(all.combos, combn(1:pred.num, i, simplify=FALSE))
+}
+
+all.combos
+class(all.combos)
+
+for(i in beta.parameters){ # Create a loop for each beta parameter
+  for(j in 1:length(all.combos)){
+output.dir <- paste("H:\\SJPM_July2016\\MaxEnt_FULL_1950\\b", i, ".", 
+                        paste(all.combos[[j]], collapse=''), sep="")   
+print(output.dir)
+model <- maxent(predictors[[all.combos[[j]]]], occ.pts[,1:2],
+                    args=c(paste("betamultiplier=", i, sep=""), "outputformat=raw"),
+                           path=output.dir)
+    max.results <- predict(model, predictors[[all.combos[[j]]]])
+    writeRaster(max.results, paste(output.dir, "/maxent.asc", sep=""),
+                format="ascii")
+    print(paste(j, " of ", length(all.combos), ": ", Sys.time(), sep=""))
+  }
+  
+}
