@@ -339,3 +339,63 @@ model <- maxent(predictors[[all.combos[[j]]]], occ.pts[,1:2],
   
 }
 
+name <- rep("inornatus",nrow(occ.pts))
+enmtools.occpts <- data.frame(name, occ.pts[,1], occ.pts[,2])
+colnames(enmtools.occpts) <- c("Species", "X", "Y")
+write.csv(enmtools.occpts,"H:\\SJPM_July2016\\MaxEnt_FULL\\inornatus.csv" , row.names=FALSE)
+
+
+head(enmtools.occpts)
+
+setwd("H:\\SJPM_July2016\\MaxEnt_FULL")
+
+dirs <- list.files()
+dirs
+
+models <- NULL
+for(i in 1:length(dirs)){
+  models[i] <- paste("H:\\SJPM_July2016\\MaxEnt_Full\\inornatus.csv,","H:\\SJPM_July2016\\MaxEnt_FULL\\",dirs[i], 
+			"\\maxent.asc,H:\\SJPM_July2016\\MaxEnt_FULL\\", dirs[i],
+                    "/species.lambdas", sep="")
+}
+
+write.csv(models, "maxent_models.csv", row.names=FALSE, quote=FALSE, col.names=FALSE)
+
+
+predictors1<-stack(predictors[[1:3]],predictors[[5:6]])
+plot(predictors1)
+
+sjpmmodel <- maxent(predictors, occ.pts[,1:2],
+                    args=c("betamultiplier=1", "outputformat=raw"),
+                           path=output.dir)
+NegPred<-predict(sjpmmodel,predictors)
+writeRaster(NegPred,"F:\\SJPM\\Clipped points\\AllVert\\AllPeromodel.asc",format="ascii",overwrite=TRUE)
+
+neg.maxent <- maxent(predictors, occ.pts[,1:2], args=c("betamultiplier=1", "-J", "-P"),
+				path="F:\\SJPM\\Clipped points\\M1")
+plot(NegPred)
+plot(combined.pts[,1:2],add=TRUE)
+
+##############################################################
+######MaxEnt again on top model to get predictor parameters###
+##############################################################
+
+predictors1<-stack(predictors[[1:2]],predictors[[4:7]])
+plot(predictors1)
+
+neg.maxent <- maxent(predictors1, occ.pts[,1:2], args=c("betamultiplier=1", "-J", "-P"),
+				path="H:\\SJPM_July2016\\Selected Model")
+
+full.pred<-stack(cr.pred[[1:2]],cr.pred[[4:7]])
+sjpmmodel <- maxent(full.pred, occ.pts[,1:2],
+                    args=c("betamultiplier=1", "outputformat=raw"),
+		       path=paste("H:\\SJPM_July2016\\PROJb", i, ".", 
+                        paste("124567", collapse=''), sep="") )
+
+plot(full.pred)
+InPred<-predict(neg.maxent,full.pred)
+plot(InPred)
+points(occ.pts[,1:2])
+
+writeRaster(InPred,"H:\\SJPM_July2016\\AllInornatus.asc",format="ascii",overwrite=TRUE)
+
