@@ -1,0 +1,23 @@
+##############################################################
+######MaxEnt again on top model to get predictor parameters###
+##############################################################
+
+predictors1<-stack(predictors[[1:2]],predictors[[4:7]])
+plot(predictors1)
+
+in.maxent <- maxent(predictors1, occ.pts[,1:2], args=c("betamultiplier=1", "-J", "-P"),
+				path="H:\\SJPM_July2016\\Selected Model")
+
+
+##predict for all of CA
+
+
+full.pred<-stack(cr.pred[[1:2]],cr.pred[[4:7]])
+
+plot(full.pred)
+InPred<-predict(in.maxent,full.pred)
+plot(InPred)
+points(occ.pts[,1:2])
+
+writeRaster(InPred,"H:\\SJPM_July2016\\AllInornatus.asc",format="ascii",overwrite=TRUE)
+
