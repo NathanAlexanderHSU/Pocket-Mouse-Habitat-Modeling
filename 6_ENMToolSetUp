@@ -1,0 +1,22 @@
+name <- rep("inornatus",nrow(occ.pts))
+enmtools.occpts <- data.frame(name, occ.pts[,1], occ.pts[,2])
+colnames(enmtools.occpts) <- c("Species", "X", "Y")
+write.csv(enmtools.occpts,"H:\\SJPM_July2016\\MaxEnt_FULL\\inornatus.csv" , row.names=FALSE)
+
+
+head(enmtools.occpts)
+
+setwd("H:\\SJPM_July2016\\MaxEnt_FULL")
+
+dirs <- list.files()
+dirs
+
+models <- NULL
+for(i in 1:length(dirs)){
+  models[i] <- paste("H:\\SJPM_July2016\\MaxEnt_Full\\inornatus.csv,","H:\\SJPM_July2016\\MaxEnt_FULL\\",dirs[i], 
+			"\\maxent.asc,H:\\SJPM_July2016\\MaxEnt_FULL\\", dirs[i],
+                    "/species.lambdas", sep="")
+}
+
+write.csv(models, "maxent_models.csv", row.names=FALSE, quote=FALSE, col.names=FALSE)
+
