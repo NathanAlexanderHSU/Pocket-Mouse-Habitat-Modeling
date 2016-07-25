@@ -1,0 +1,155 @@
+install.packages("spatstat")
+install.packages("rgdal")
+install.packages("raster")
+install.packages("maptools")
+install.packages("rgeos")
+install.packages("rJava")
+install.packages("sp")
+install.packages("PresenceAbsence")
+require(spatstat)
+require(rgdal)
+require(raster)
+require(maptools)
+require(rgeos)
+require(dismo)
+require(rJava)
+require(sp)
+require(PresenceAbsence)
+library(dismo)
+
+
+setwd(choose.dir())
+
+##read in occurrence points
+points<-read.csv(choose.files())
+
+##Selected model (all points)
+
+Model<-raster("H:\\SJPM_July2016\\Allinornatus.asc")
+
+##extract the values of the raster at each occurrence
+
+Values<-extract(Model, points[,2:3])
+head(Values)
+boxplot(Values)
+min(Values)
+#1
+
+for(i in 1:10){
+plot(Model>quantile(Values,as.numeric(paste(c(".",i/2),collapse="",sep=''))))
+}
+#all
+names(Thresholds)<-("value")
+plot(Thresholds)
+#1
+write.csv(Thresholds,"C:\\Users\\nba52\\Desktop\\SJPM Thresholds.csv")
+#2
+write.csv(Thresholds,"C:\\Users\\nba52\\Desktop\\SJPM Mean Thresholds.csv")
+
+#1
+Thresholds
+dim(Thresholds)
+for(i in 1:12){
+writeRaster(Model>Thresholds[i,1],paste(, ".", 
+"C:Users\\nba52\\Desktop\\Thresholds\\Thresh",Thresholds[i,1],".ascii"))
+} 
+ 
+Thresholds
+
+dim(Thresholds)
+  for(j in 1:12){
+       writeRaster(Model>Thresholds[j,1], paste("C:\\Users\\nba52\\Desktop\\Thresholds\\QuantileMax",j,".img",
+	 sep=""), format="HFA")
+    print(paste(j, " of ", 12, ": ", Sys.time(), sep=""))
+
+  }
+
+
+setwd("C:\\Users\\nba52\\Desktop\\Thresholds\\")
+getwd()
+dirs<-list.files()
+dirs
+a<-raster("QuantileMax1.asc")
+b<-raster("QuantileMax2.asc")
+c<-raster("QuantileMax3.asc")
+d<-raster("QuantileMax4.asc")
+e<-raster("QuantileMax5.asc")
+f<-raster("QuantileMax6.asc")
+g<-raster("QuantileMax7.asc")
+h<-raster("QuantileMax8.asc")
+i<-raster("QuantileMax9.asc")
+j<-raster("QuantileMax10.asc")
+k<-raster("QuantileMax11.asc")
+l<-raster("QuantileMax12.asc")
+
+
+attach(mtcars)
+par(mfrow=c(6,2))
+plot(a)
+plot(b)
+plot(c)
+plot(d)
+plot(e)
+plot(f)
+plot(g)
+plot(h)
+plot(i)
+plot(j)
+plot(k)
+plot(l)
+
+#2
+
+Thresholds
+dim(Thresholds)
+for(i in 1:1){
+writeRaster(Model>.61549,paste(, ".", 
+"C:Users\\nba52\\Desktop\\Thresholds\\Thresh",Thresholds,".ascii"))
+} 
+ 
+Thresholds
+
+dim(Thresholds)
+  for(j in 1:1){
+       writeRaster(Model>Thresholds[j,1], paste("C:\\Users\\nba52\\Desktop\\Thresholds\\QuantileMax",j,".img",
+	 sep=""), format="HFA")
+    print(paste(j, " of ", 12, ": ", Sys.time(), sep=""))
+
+  }
+
+
+setwd("C:\\Users\\nba52\\Desktop\\Thresholds\\")
+getwd()
+dirs<-list.files()
+dirs
+a<-raster("QuantileMax1.asc")
+b<-raster("QuantileMax2.asc")
+c<-raster("QuantileMax3.asc")
+d<-raster("QuantileMax4.asc")
+e<-raster("QuantileMax5.asc")
+f<-raster("QuantileMax6.asc")
+g<-raster("QuantileMax7.asc")
+h<-raster("QuantileMax8.asc")
+i<-raster("QuantileMax9.asc")
+j<-raster("QuantileMax10.asc")
+k<-raster("QuantileMax11.asc")
+l<-raster("QuantileMax12.asc")
+
+
+attach(mtcars)
+par(mfrow=c(6,2))
+plot(a)
+plot(b)
+plot(c)
+plot(d)
+plot(e)
+plot(f)
+plot(g)
+plot(h)
+plot(i)
+plot(j)
+plot(k)
+plot(l)
+
+
+dim(l)
