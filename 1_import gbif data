@@ -20,6 +20,7 @@ nba<-readOGR(dsn=".",layer="NBA")
 ##Read in species occurrence from gbif of all perognathus
 
 sp.occur <- gbif(genus='Perognathus', species='', geo=TRUE,removeZeros=TRUE)
+dip.occur <- gbif(genus='Dipodomys', species='', geo=TRUE,removeZeros=TRUE)
 memory.limit
 
 ##download pema occurrences manually due to size.
@@ -31,24 +32,29 @@ head(pema.occur)
 
 write.csv(sp.occur, "C:\\Users\\nba52\\Desktop\\gbif-all-22jul2016.csv", row.names=FALSE)
 write.csv(pema.occur, "C:\\Users\\nba52\\Desktop\\gbif-pema-22jul2016.csv", row.names=FALSE)
+write.csv(dip.occur, "C:\\Users\\nba52\\Desktop\\gbif-Dipo-22jul2016.csv", row.names=FALSE)
 
 ###read in sp occurrence datasheet
 
 sp.occur <- read.csv(choose.files(),header=T)
 pema.occur<-read.csv(choose.files(),header=T)
+dip.occur<-read.csv(choose.files(),header=T)
 
 ##omit ones without latitude
 sp.occur <- subset(sp.occur, !is.na(sp.occur$lat))
-colnames(pema.occur)
+
+di.occur <- subset(dip.occur, !is.na(dip.occur$lat))
 
 pe.occur<-subset(pema.occur,!is.na(pema.occur$decimallatitude))
 
-names(pe.occur)
+
 ##convert to spatial data frame
 
 sp.occur.spdf <- SpatialPointsDataFrame(data.frame(sp.occur$lon, sp.occur$lat), 
                                         data=sp.occur)
 
+di.occur.spdf <- SpatialPointsDataFrame(data.frame(di.occur$lon, di.occur$lat), 
+                                        data=di.occur)
 
 pe.occur.spdf <- SpatialPointsDataFrame(data.frame(pe.occur$decimallongitude, pe.occur$decimallatitude), 
                                         data=pe.occur)
@@ -58,6 +64,10 @@ pe.occur.spdf <- SpatialPointsDataFrame(data.frame(pe.occur$decimallongitude, pe
 sp.occur.spdf@proj4string <- cal@proj4string
 
 sp.occur.spdf$name <- over(sp.occur.spdf, cal)$NAME
+
+di.occur.spdf@proj4string <- cal@proj4string
+
+di.occur.spdf$name <- over(di.occur.spdf, cal)$NAME
 
 pe.occur.spdf@proj4string <- cal@proj4string
 
@@ -72,10 +82,12 @@ points(pe.occur.spdf)
 points(sp.occur.spdf,pch=17,col="red")
 points(inornatus,pch=10,col="yellow")
 points(nba,pch=14,col="blue")
+points(de.occur,pch=15,col="green")
 
 ###Crop points
 
 re.sp.occur.spdf <- sp.occur.spdf[cal,]
+re.di.occur.spdf<-di.occur.spdf[cal,]
 re.pe.occur.spdf<-pe.occur.spdf[cal,]
 
 
@@ -89,6 +101,7 @@ inornatus<-subset(re.sp.occur.spdf[which(re.sp.occur.spdf$species=="Perognathus 
 plot(cal)
 points(re.sp.occur.spdf,col="red")
 points(re.pe.occur.spdf, col="black")
+points(re.di.occur.spdf, col="green")
 points(inornatus,col="blue")
 points(nba,col="yellow")
 
@@ -97,6 +110,7 @@ points(nba,col="yellow")
 inornatus_df<-data.frame(inornatus)
 cal.occur_df<-data.frame(re.sp.occur.spdf)
 pema.occur_df<-data.frame(re.pe.occur.spdf)
+di.occur_df<-data.frame(re.di.occur.spdf)
 nba_df<-data.frame(nba)
 
 ##omit undefined species occurrences
