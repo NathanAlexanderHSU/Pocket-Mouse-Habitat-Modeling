@@ -9,15 +9,19 @@ colnames(nba.xy)<-c("X","Y")
 all.inort<-rbind(inort.xy,nba.xy)
 plot(all.inort)
 
+
+di.xy<-cbind(di.occur_df$lon, di.occur_df$lat)
+colnames(di.xy)<-c("X","Y")
+
 colnames(pema.occur_df)
 pema.xy<-cbind(pema.occur_df$decimallongitude,pema.occur_df$decimallatitude)
 colnames(pema.xy)<-c("X","Y")
 
-colnames(cal.occur_df1)
+
 pero.xy<-cbind(cal.occur_df1$lon,cal.occur_df1$lat)
 colnames(pero.xy)<-c("X","Y")
 
-all.pts<-rbind(inort.xy,nba.xy,pema.xy,pero.xy)
+all.pts<-rbind(inort.xy,nba.xy,pema.xy,pero.xy,di.xy)
 
 plot(all.pts)
 points(all.inort, col="blue")
