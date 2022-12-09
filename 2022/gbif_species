@@ -1,0 +1,145 @@
+## Download SJPM sp. from GBIF
+
+install.packages('dismo')
+install.packages('rgdal')
+library(dismo)
+library(rgdal)
+
+
+
+##CA shapefile from Cara-projected to WGS84 in ArcMap
+
+setwd(choose.dir())
+cal<-readOGR(dsn=".",layer="ca_wgs84")
+plot(cal)
+
+##Read in GKR SJPM data
+
+setwd(choose.dir())
+nba<-readOGR(dsn=".",layer="NBA")
+
+
+##Read in species occurrence from gbif of all perognathus
+
+sp.occur <- gbif(genus='Perognathus', species='inornatus', geo=TRUE,removeZeros=TRUE)
+dip.occur <- gbif(genus='Dipodomys', species='', geo=TRUE,removeZeros=TRUE)
+memory.limit
+
+colnames(sp.occur)
+unique(sp.occur$scientificName)
+plot(cbind(sp.occur$lon,sp.occur$lat),legend=levels(sp.occur$scientificName),col='black',pch=16,legend=TRUE)
+
+P_i_i<-sp.occur[which(sp.occur$scientificName=="Perognathus inornatus inornatus"),]
+P_i_n<-sp.occur[which(sp.occur$scientificName=="Perognathus inornatus neglectus Taylor, 1912"),]
+P_i_p<-sp.occur[which(sp.occur$scientificName=="Perognathus inornatus psammophilus von Bloeker, 1937"),]
+
+dim(P_i_i)
+dim(P_i_n)
+dim(P_i_p)
+
+
+points(cbind(P_i_i$lon,P_i_i$lat),col='blue',pch=16)
+points(cbind(P_i_n$lon,P_i_n$lat),col='yellow',pch=16)
+points(cbind(P_i_p$lon,P_i_p$lat),col='orange',pch=16)
+
+plot(
+legend(
+  x ="topright",
+  legend = paste("Color", levels(sp.occur$scientificName)), # for readability of legend
+  col = 1:4,
+  pch = 19, # same as pch=20, just smaller
+  cex = .7 # scale the legend to look attractively sized
+)
+##download pema occurrences manually due to size.
+
+pema.occur<-read.csv(choose.files(),header=T)
+pema.occur<-pe
+head(pema.occur)
+##write as a csv so don't have to again
+
+write.csv(sp.occur, "C:\\Users\\nba52\\Desktop\\gbif-all-22jul2016.csv", row.names=FALSE)
+write.csv(pema.occur, "C:\\Users\\nba52\\Desktop\\gbif-pema-22jul2016.csv", row.names=FALSE)
+write.csv(dip.occur, "C:\\Users\\nba52\\Desktop\\gbif-Dipo-22jul2016.csv", row.names=FALSE)
+
+###read in sp occurrence datasheet
+
+sp.occur <- read.csv(choose.files(),header=T)
+pema.occur<-read.csv(choose.files(),header=T)
+dip.occur<-read.csv(choose.files(),header=T)
+
+##omit ones without latitude
+sp.occur <- subset(sp.occur, !is.na(sp.occur$lat))
+
+di.occur <- subset(dip.occur, !is.na(dip.occur$lat))
+
+pe.occur<-subset(pema.occur,!is.na(pema.occur$decimallatitude))
+
+
+##convert to spatial data frame
+
+sp.occur.spdf <- SpatialPointsDataFrame(data.frame(sp.occur$lon, sp.occur$lat), 
+                                        data=sp.occur)
+
+di.occur.spdf <- SpatialPointsDataFrame(data.frame(di.occur$lon, di.occur$lat), 
+                                        data=di.occur)
+
+pe.occur.spdf <- SpatialPointsDataFrame(data.frame(pe.occur$decimallongitude, pe.occur$decimallatitude), 
+                                        data=pe.occur)
+
+##Define projection
+
+sp.occur.spdf@proj4string <- cal@proj4string
+
+sp.occur.spdf$name <- over(sp.occur.spdf, cal)$NAME
+
+di.occur.spdf@proj4string <- cal@proj4string
+
+di.occur.spdf$name <- over(di.occur.spdf, cal)$NAME
+
+pe.occur.spdf@proj4string <- cal@proj4string
+
+pe.occur.spdf$name <- over(pe.occur.spdf, cal)$NAME
+
+nba@proj4string <- cal@proj4string
+
+nba$name <- over(nba, cal)$NAME
+##plot points
+plot(cal)
+points(pe.occur.spdf)
+points(sp.occur.spdf,pch=17,col="red")
+points(inornatus,pch=10,col="yellow")
+points(nba,pch=14,col="blue")
+points(de.occur,pch=15,col="green")
+
+###Crop points
+
+re.sp.occur.spdf <- sp.occur.spdf[cal,]
+re.di.occur.spdf<-di.occur.spdf[cal,]
+re.pe.occur.spdf<-pe.occur.spdf[cal,]
+
+
+##subset into inornatus species
+
+inornatus<-subset(re.sp.occur.spdf[which(re.sp.occur.spdf$species=="Perognathus inornatus"),])
+
+
+##plot points
+
+plot(cal)
+points(re.sp.occur.spdf,col="red")
+points(re.pe.occur.spdf, col="black")
+points(re.di.occur.spdf, col="green")
+points(inornatus,col="blue")
+points(nba,col="yellow")
+
+
+##convert to dataframe
+inornatus_df<-data.frame(inornatus)
+cal.occur_df<-data.frame(re.sp.occur.spdf)
+pema.occur_df<-data.frame(re.pe.occur.spdf)
+di.occur_df<-data.frame(re.di.occur.spdf)
+nba_df<-data.frame(nba)
+
+##omit undefined species occurrences
+
+cal.occur_df1<-cal.occur_df[!is.na(cal.occur_df$species),]
